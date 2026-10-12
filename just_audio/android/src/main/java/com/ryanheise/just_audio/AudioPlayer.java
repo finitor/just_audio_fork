@@ -777,7 +777,14 @@ public class AudioPlayer implements MethodCallHandler, Player.Listener, Metadata
     private void ensurePlayerInitialized() {
         if (player == null) {
             RenderersFactory renderersFactory = (eventHandler, videoListener, audioListener, textOutput, metadataOutput) -> {
-                Renderer[] defaultRenderers = new DefaultRenderersFactory(context)
+                DefaultRenderersFactory defaultRenderersFactory = new DefaultRenderersFactory(context);
+                // ALAC fix: prefer extension renderers (FFmpeg) over platform
+                // MediaCodec renderers. Media3 1.x silently stalls on the
+                // platform ALAC decoder (no PCM, no error, wall-clock position
+                // advance); the FFmpeg software decoder handles ALAC correctly.
+                defaultRenderersFactory.setExtensionRendererMode(
+                        DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+                Renderer[] defaultRenderers = defaultRenderersFactory
                     .createRenderers(eventHandler, videoListener, audioListener, textOutput, metadataOutput);
                 Renderer[] allRenderers = Arrays.copyOf(defaultRenderers, defaultRenderers.length + 1);
                 allRenderers[defaultRenderers.length] = new ObserverRenderer();
